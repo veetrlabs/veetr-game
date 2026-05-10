@@ -165,6 +165,10 @@ function isOnIsland(entity, padding = 0) {
   return state.islands.some((island) => islandOverlap(entity, island, padding) < 1);
 }
 
+function isIslandPoint(x, z, padding = 0) {
+  return state.islands.some((island) => islandOverlap({ x, z }, island, padding) < 1);
+}
+
 function resolveIslandCollisions(entity, padding, bounce = 0.25) {
   for (const island of state.islands) {
     const radii = islandRadii(island, padding);
@@ -242,12 +246,30 @@ function makeScenery() {
       new THREE.Vector3(state.worldWidth / 6, 0.18, z + random(-3, 3)),
       new THREE.Vector3(state.worldWidth / 2 + 42, 0.18, z),
     ]);
-    const line = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(curve.getPoints(38)),
-      materials.foam.clone(),
-    );
-    waveRoot.add(line);
+    addFoamWave(curve);
   }
+}
+
+function addFoamWave(curve) {
+  let segment = [];
+  for (const point of curve.getPoints(80)) {
+    if (isIslandPoint(point.x, point.z, 5.5)) {
+      addFoamSegment(segment);
+      segment = [];
+    } else {
+      segment.push(point);
+    }
+  }
+  addFoamSegment(segment);
+}
+
+function addFoamSegment(points) {
+  if (points.length < 4) return;
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(points),
+    materials.foam.clone(),
+  );
+  waveRoot.add(line);
 }
 
 function createIsland(island) {
@@ -455,7 +477,10 @@ function createBoatModel({ pirate = false } = {}) {
 }
 
 function waveHeightAt(x, z, time = state.waveTime) {
-  return (
+  if (isIslandPoint(x, z, 1.5)) return -0.82;
+
+  const shoreDamping = isIslandPoint(x, z, 7) ? 0.22 : 1;
+  return shoreDamping * (
     Math.sin(x * 0.09 + time * 1.7) * 0.42 +
     Math.sin(z * 0.075 + x * 0.025 + time * 1.15) * 0.34 +
     Math.sin((x + z) * 0.045 + time * 2.25) * 0.18
@@ -779,9 +804,9 @@ function updateSplashes(dt) {
 
 function updateModels() {
   updateWater();
-  waveRoot.position.x = Math.sin(state.waveTime * 0.7) * 1.8;
-  waveRoot.position.z = Math.cos(state.waveTime * 0.5) * 1.2;
-  waveRoot.position.y = Math.sin(state.waveTime * 1.4) * 0.15;
+  waveRoot.position.x = 0;
+  waveRoot.position.z = 0;
+  waveRoot.position.y = Math.sin(state.waveTime * 1.4) * 0.12;
 
   if (state.boat?.model) {
     const wave = waveHeightAt(state.boat.x, state.boat.z);

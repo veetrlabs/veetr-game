@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Harbor Run</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas id="game" aria-label="Harbor Run game"></canvas>
+
+      <section class="hud" aria-label="Game status">
+        <div class="brand">Harbor Run</div>
+        <div class="stats">
+          <span>Packages <strong id="score">0</strong></span>
+          <span>Hull <strong id="lives">3</strong></span>
+          <span>Best <strong id="best">0</strong></span>
+        </div>
+      </section>
+
+      <button class="round-button pause-button" id="pauseButton" type="button" aria-label="Pause">
+        <span id="pauseIcon">Ⅱ</span>
+      </button>
+
+      <div class="touch-pad" id="touchPad" aria-hidden="true">
+        <div class="touch-stick" id="touchStick"></div>
+      </div>
+
+      <section class="overlay is-visible" id="overlay" aria-live="polite">
+        <div class="overlay-panel">
+          <h1 id="overlayTitle">Harbor Run</h1>
+          <p id="overlayText">Collect cargo from the trade lanes before the pirate crews close in.</p>
+          <button id="startButton" type="button">Set Sail</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

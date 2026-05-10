@@ -171,6 +171,174 @@ button {
   transform: translate(0, 0);
 }
 
+.instrument-bar {
+  --wind-rotation: 0deg;
+  position: absolute;
+  left: clamp(156px, 17vw, 220px);
+  right: clamp(12px, 2.6vw, 24px);
+  bottom: clamp(12px, 2.6vw, 24px);
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  max-width: 860px;
+  margin-left: auto;
+  padding: 8px;
+  border: 1px solid rgba(101, 228, 195, 0.2);
+  border-radius: 8px;
+  background: rgba(3, 10, 18, 0.86);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+}
+
+.wind-dial {
+  display: grid;
+  place-items: center;
+}
+
+.wind-dial-face {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  border: 1px solid rgba(101, 228, 195, 0.28);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(101, 228, 195, 0.22) 0 3px, transparent 4px),
+    repeating-conic-gradient(from 0deg, rgba(101, 228, 195, 0.22) 0 1deg, transparent 1deg 30deg),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+}
+
+.wind-dial-face span {
+  position: absolute;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 850;
+}
+
+.wind-dial-face span:nth-child(1) {
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.wind-dial-face span:nth-child(2) {
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
+.wind-dial-face span:nth-child(3) {
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.wind-dial-face span:nth-child(4) {
+  top: 50%;
+  left: 6px;
+  transform: translateY(-50%);
+}
+
+.wind-needle {
+  position: absolute;
+  inset: 11px;
+  transform: rotate(var(--wind-rotation));
+  transition: transform 220ms ease;
+}
+
+.wind-needle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--signal);
+  box-shadow: 0 0 16px rgba(101, 228, 195, 0.38);
+}
+
+.wind-needle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 7px);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid var(--signal);
+  transform: translateY(-4px);
+}
+
+.boat-marker {
+  position: absolute;
+  left: calc(50% - 5px);
+  top: calc(50% - 9px);
+  width: 10px;
+  height: 18px;
+  border-radius: 50% 50% 3px 3px;
+  background: #f6f8fb;
+  clip-path: polygon(50% 0, 100% 100%, 50% 82%, 0 100%);
+}
+
+.instrument-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(76px, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.instrument {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 78px;
+  padding: 7px 10px 8px;
+  border: 1px solid rgba(101, 228, 195, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(13, 31, 42, 0.96), rgba(9, 22, 32, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.instrument span,
+.instrument small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.instrument strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: clamp(1.34rem, 2.7vw, 1.94rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instrument.wide strong {
+  font-size: clamp(0.95rem, 1.75vw, 1.16rem);
+}
+
+.instrument.is-warning {
+  border-color: rgba(255, 107, 107, 0.52);
+  background: linear-gradient(180deg, rgba(64, 35, 42, 0.96), rgba(35, 21, 30, 0.96));
+}
+
+.instrument.is-warning strong,
+.instrument.is-warning small {
+  color: #ffd7d7;
+}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -188,6 +356,7 @@ button {
 
 .overlay-panel {
   width: min(430px, 100%);
+  max-width: calc(100vw - 32px);
   padding: clamp(22px, 5vw, 34px);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -209,6 +378,7 @@ button {
   margin: 0 0 10px;
   font-size: clamp(2.1rem, 9vw, 4.35rem);
   line-height: 0.94;
+  overflow-wrap: break-word;
 }
 
 .overlay p {
@@ -285,5 +455,200 @@ button {
   .round-button {
     width: 42px;
     height: 42px;
+  }
+
+  .touch-pad {
+    bottom: 132px;
+    width: 104px;
+    height: 104px;
+  }
+
+  .touch-stick {
+    top: 31px;
+    left: 31px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .instrument-bar {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .wind-dial-face {
+    width: 56px;
+    height: 56px;
+  }
+
+  .wind-dial-face span {
+    display: none;
+  }
+
+  .wind-needle {
+    inset: 8px;
+  }
+
+  .wind-needle::before {
+    height: 22px;
+  }
+
+  .instrument-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .instrument {
+    min-height: 54px;
+    padding: 6px;
+  }
+
+  .instrument span,
+  .instrument small {
+    font-size: 0.55rem;
+  }
+
+  .instrument strong {
+    font-size: 0.98rem;
+  }
+
+  .overlay {
+    padding: 16px;
+    justify-content: flex-start;
+  }
+
+  .overlay-panel {
+    width: min(288px, calc(100vw - 24px));
+    max-width: 288px;
+    padding: 24px 18px;
+  }
+
+  .overlay h1 {
+    font-size: 2.08rem;
+  }
+
+  .overlay-actions {
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .overlay button,
+  .overlay-actions a {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 13px;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .game-shell {
+    min-height: 100dvh;
+  }
+
+  .hud {
+    top: 8px;
+    left: 8px;
+    right: 58px;
+    padding: 7px 9px;
+  }
+
+  .brand small,
+  .stats {
+    font-size: 0.68rem;
+  }
+
+  .veetr-link {
+    display: none;
+  }
+
+  .pause-button {
+    top: 8px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .touch-pad {
+    bottom: 84px;
+    left: 12px;
+    width: 82px;
+    height: 82px;
+  }
+
+  .touch-stick {
+    top: 24px;
+    left: 24px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .instrument-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 6px;
+    max-width: none;
+    padding: 6px;
+  }
+
+  .wind-dial-face {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wind-dial-face span {
+    display: none;
+  }
+
+  .wind-needle {
+    inset: 7px;
+  }
+
+  .wind-needle::before {
+    height: 18px;
+  }
+
+  .instrument-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .instrument {
+    min-height: 44px;
+    padding: 5px 6px;
+  }
+
+  .instrument span,
+  .instrument small {
+    font-size: 0.48rem;
+  }
+
+  .instrument strong,
+  .instrument.wide strong {
+    font-size: 0.86rem;
+  }
+
+  .overlay {
+    padding: 10px;
+  }
+
+  .overlay-panel {
+    width: min(440px, calc(100vw - 20px));
+    max-width: 440px;
+    padding: 18px 20px;
+  }
+
+  .overlay h1 {
+    font-size: 2.15rem;
+  }
+
+  .overlay p {
+    margin-bottom: 14px;
+    font-size: 0.9rem;
   }
 }

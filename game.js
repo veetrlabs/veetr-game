@@ -12,6 +12,15 @@ const pauseButton = document.querySelector("#pauseButton");
 const pauseIcon = document.querySelector("#pauseIcon");
 const touchPad = document.querySelector("#touchPad");
 const touchStick = document.querySelector("#touchStick");
+const windSpeedEl = document.querySelector("#windSpeed");
+const windDirectionEl = document.querySelector("#windDirection");
+const windAngleEl = document.querySelector("#windAngle");
+const headingEl = document.querySelector("#heading");
+const boatSpeedEl = document.querySelector("#boatSpeed");
+const sailTrimEl = document.querySelector("#sailTrim");
+const pointOfSailEl = document.querySelector("#pointOfSail");
+const windNeedle = document.querySelector("#windNeedle");
+const sailInstrument = sailTrimEl?.closest(".instrument");
 
 const keys = new Set();
 const pointer = { active: false, id: null, x: 0, y: 0 };
@@ -38,14 +47,25 @@ const state = {
   pirates: [],
   splashes: [],
   islands: [],
+  wind: {
+    direction: 0,
+    targetDirection: 0,
+    speed: 12,
+    targetSpeed: 12,
+    shiftTimer: 0,
+  },
 };
 
 const boatRadius = 3.1;
 const packageRadius = 2.4;
 const pirateRadius = 3.2;
 const maxSpeed = 42;
-const acceleration = 88;
-const drag = 0.92;
+const turnRate = 2.15;
+const sailAcceleration = 34;
+const rudderAcceleration = 11;
+const drag = 0.965;
+const stalledDrag = 0.9;
+const noGoAngle = THREE.MathUtils.degToRad(30);
 const pirateAcceleration = 13.5;
 const pirateTurnRate = 1.05;
 
@@ -82,6 +102,7 @@ const materials = {
   sail: new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.55, side: THREE.DoubleSide }),
   goldSail: new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.5, side: THREE.DoubleSide }),
   pirateSail: new THREE.MeshStandardMaterial({ color: 0xf7fbff, roughness: 0.55, side: THREE.DoubleSide }),
+  spinnaker: new THREE.MeshStandardMaterial({ color: 0x65e4c3, roughness: 0.48, side: THREE.DoubleSide, transparent: true, opacity: 0.92 }),
   red: new THREE.MeshStandardMaterial({ color: 0xff6b6b, roughness: 0.5 }),
   crate: new THREE.MeshStandardMaterial({ color: 0xb67337, roughness: 0.62 }),
   strap: new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.45 }),
@@ -136,6 +157,117 @@ function random(min, max) {
 
 function angleDelta(from, to) {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+function normalizeDegrees(value) {
+  return ((value % 360) + 360) % 360;
+}
+
+function compassDegrees(angle) {
+  return Math.round(normalizeDegrees(180 - THREE.MathUtils.radToDeg(angle)));
+}
+
+function rounded(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function windAngleInfo(heading = state.boat?.angle || 0) {
+  const signed = angleDelta(heading, state.wind.direction);
+  const absolute = Math.abs(signed);
+  const downwind = Math.PI - absolute;
+  let point = "In irons";
+  let power = 0;
+  let sailEase = 0.08;
+
+  if (absolute < noGoAngle) {
+    point = "No-go zone";
+  } else if (absolute < THREE.MathUtils.degToRad(52)) {
+    point = "Close hauled";
+    power = 0.68;
+    sailEase = 0.18;
+  } else if (absolute < THREE.MathUtils.degToRad(85)) {
+    point = "Close reach";
+    power = 0.86;
+    sailEase = 0.42;
+  } else if (absolute < THREE.MathUtils.degToRad(120)) {
+    point = "Beam reach";
+    power = 1;
+    sailEase = 0.7;
+  } else if (absolute < THREE.MathUtils.degToRad(155)) {
+    point = "Broad reach";
+    power = 0.9;
+    sailEase = 0.98;
+  } else {
+    point = "Running";
+    power = 0.66;
+    sailEase = 1.24 - downwind * 0.12;
+  }
+
+  const side = signed >= 0 ? -1 : 1;
+  const running = absolute > THREE.MathUtils.degToRad(150);
+  return {
+    signed,
+    absolute,
+    point,
+    power,
+    sailAngle: side * sailEase,
+    jibAngle: side * (running ? -1.05 : sailEase * 0.72),
+    boomAngle: side * sailEase,
+    leewardSide: side,
+    running,
+    stalled: absolute < noGoAngle,
+  };
+}
+
+function animateSail(mesh, time, trimAngle, { stalled = false, jib = false } = {}) {
+  const shape = mesh.userData.sailShape;
+  if (!shape) return;
+
+  const positions = mesh.geometry.attributes.position;
+  const trimPressure = clamp(Math.abs(trimAngle) / 1.15, 0, 1);
+  const targetSide = trimAngle >= 0 ? 1 : -1;
+  const billowScale = stalled ? 0.18 : 0.62 + trimPressure * 0.42;
+  const shake = stalled ? 1 : 0.08;
+  const leechTension = stalled ? 0.55 : 0.16;
+
+  for (let i = 0; i < shape.baseVertices.length; i += 1) {
+    const point = shape.baseVertices[i];
+    const looseEdge = point.u * point.u;
+    const verticalPulse = Math.sin(time * (stalled ? 16 : 4.2) + point.v * 8 + (jib ? 1.7 : 0));
+    const crossPulse = Math.sin(time * (stalled ? 21 : 5.5) + point.u * 5 + point.v * 4);
+    const luffShake = stalled ? verticalPulse * looseEdge * leechTension : crossPulse * 0.035 * looseEdge;
+    const easedLateral = point.lateral + targetSide * luffShake;
+    const easedBillow = point.billow * billowScale + crossPulse * looseEdge * shake * (jib ? 0.22 : 0.3);
+
+    positions.setXYZ(i, easedLateral, point.y, easedBillow);
+  }
+
+  positions.needsUpdate = true;
+  mesh.geometry.computeVertexNormals();
+}
+
+function animateSpinnaker(mesh, time, active) {
+  mesh.visible = active;
+  if (!active) return;
+
+  const shape = mesh.userData.spinnakerShape;
+  const positions = mesh.geometry.attributes.position;
+
+  for (let i = 0; i < shape.baseVertices.length; i += 1) {
+    const point = shape.baseVertices[i];
+    const belly = Math.sin(Math.PI * point.u) * Math.sin(Math.PI * point.v);
+    const curl = Math.sin(time * 3.2 + point.v * 7 + point.u * 2) * belly;
+    const lateralPulse = Math.sin(time * 2.4 + point.v * 5) * belly * 0.18;
+    positions.setXYZ(
+      i,
+      point.lateral + lateralPulse,
+      point.vertical + curl * 0.1,
+      point.forward + curl * 0.42,
+    );
+  }
+
+  positions.needsUpdate = true;
+  mesh.geometry.computeVertexNormals();
 }
 
 function bounds(padding = 0) {
@@ -367,6 +499,7 @@ function createCurvedSail(width, height, side, material) {
   const stepsX = 8;
   const stepsY = 12;
   const vertices = [];
+  const baseVertices = [];
   const indices = [];
 
   for (let y = 0; y <= stepsY; y += 1) {
@@ -377,6 +510,7 @@ function createCurvedSail(width, height, side, material) {
       const lateral = side * rowWidth * u;
       const billow = Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * 0.72;
       vertices.push(lateral, height * v, billow);
+      baseVertices.push({ lateral, y: height * v, billow, u, v });
     }
   }
 
@@ -396,6 +530,49 @@ function createCurvedSail(width, height, side, material) {
   geometry.computeVertexNormals();
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = true;
+  mesh.userData.sailShape = { baseVertices, side };
+  return mesh;
+}
+
+function createSpinnaker() {
+  const stepsX = 12;
+  const stepsY = 12;
+  const vertices = [];
+  const baseVertices = [];
+  const indices = [];
+
+  for (let y = 0; y <= stepsY; y += 1) {
+    const v = y / stepsY;
+    const width = Math.sin(Math.PI * v) * 4.5;
+    for (let x = 0; x <= stepsX; x += 1) {
+      const u = x / stepsX;
+      const lateral = (u - 0.5) * width;
+      const vertical = 1.2 + v * 6.5;
+      const forward = 2.45 + Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * 2.1;
+      vertices.push(lateral, vertical, forward);
+      baseVertices.push({ lateral, vertical, forward, u, v });
+    }
+  }
+
+  for (let y = 0; y < stepsY; y += 1) {
+    for (let x = 0; x < stepsX; x += 1) {
+      const a = y * (stepsX + 1) + x;
+      const b = a + 1;
+      const c = a + stepsX + 1;
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geometry, materials.spinnaker);
+  mesh.castShadow = true;
+  mesh.visible = false;
+  mesh.userData.spinnakerShape = { baseVertices };
   return mesh;
 }
 
@@ -437,7 +614,9 @@ function createBoatModel({ pirate = false } = {}) {
   const mast = createCylinderBetween(new THREE.Vector3(0, 0.35, -0.3), new THREE.Vector3(0, 8.7, -0.3), 0.12, materials.trunk);
   group.add(mast);
 
-  const boom = createCylinderBetween(new THREE.Vector3(0, 2.15, -0.3), new THREE.Vector3(3.6, 1.75, 0.2), 0.08, materials.trunk);
+  const boom = new THREE.Group();
+  boom.position.set(0, 2.15, -0.3);
+  boom.add(createCylinderBetween(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -0.36, -3.7), 0.08, materials.trunk));
   group.add(boom);
 
   const bowsprit = createCylinderBetween(new THREE.Vector3(0, 0.35, 4.3), new THREE.Vector3(0, 0.7, 6.5), 0.07, materials.trunk);
@@ -451,6 +630,9 @@ function createBoatModel({ pirate = false } = {}) {
   jib.position.set(-0.05, 1.2, 3.95);
   jib.rotation.y = 0.08;
   group.add(jib);
+
+  const spinnaker = createSpinnaker();
+  if (!pirate) group.add(spinnaker);
 
   group.add(createRigging([
     new THREE.Vector3(0, 8.7, -0.3),
@@ -473,6 +655,7 @@ function createBoatModel({ pirate = false } = {}) {
   }
 
   group.scale.setScalar(pirate ? 0.9 : 1);
+  group.userData.sails = { mainSail, jib, boom, spinnaker };
   return group;
 }
 
@@ -514,6 +697,15 @@ function createPackageModel() {
   return group;
 }
 
+function resetWind() {
+  const startOffset = random(noGoAngle * 1.8, Math.PI) * (Math.random() < 0.5 ? -1 : 1);
+  state.wind.direction = Math.PI + startOffset;
+  state.wind.targetDirection = state.wind.direction + random(-0.55, 0.55);
+  state.wind.speed = random(7, 18);
+  state.wind.targetSpeed = random(7, 20);
+  state.wind.shiftTimer = random(2, 5);
+}
+
 function resetGame() {
   state.score = 0;
   state.lives = 3;
@@ -529,6 +721,7 @@ function resetGame() {
   state.packages = [];
   state.pirates = [];
   state.splashes = [];
+  resetWind();
 
   if (state.boat?.model) root.remove(state.boat.model);
   state.boat = {
@@ -545,6 +738,7 @@ function resetGame() {
   for (let i = 0; i < 6; i += 1) spawnPackage();
   spawnPirate();
   syncHud();
+  syncInstruments();
   hideOverlay();
   pauseIcon.textContent = "Ⅱ";
 }
@@ -553,6 +747,24 @@ function syncHud() {
   scoreEl.textContent = state.score;
   livesEl.textContent = state.lives;
   bestEl.textContent = state.best;
+}
+
+function syncInstruments() {
+  const boat = state.boat;
+  const info = windAngleInfo(boat?.angle || Math.PI);
+  const speed = boat ? Math.hypot(boat.vx, boat.vz) : 0;
+  const trueWindAngle = Math.round(THREE.MathUtils.radToDeg(info.absolute));
+  const sailText = info.stalled ? "Luffing" : info.running ? "Spinnaker" : `${Math.round(Math.abs(THREE.MathUtils.radToDeg(info.sailAngle)))} deg`;
+
+  windSpeedEl.textContent = rounded(state.wind.speed).toFixed(1);
+  windDirectionEl.textContent = compassDegrees(state.wind.direction).toString().padStart(3, "0");
+  windAngleEl.textContent = trueWindAngle.toString();
+  headingEl.textContent = compassDegrees(boat?.angle || Math.PI).toString().padStart(3, "0");
+  boatSpeedEl.textContent = rounded(speed * 0.22).toFixed(1);
+  sailTrimEl.textContent = sailText;
+  pointOfSailEl.textContent = info.point;
+  sailInstrument.classList.toggle("is-warning", info.stalled);
+  windNeedle.style.setProperty("--wind-rotation", `${compassDegrees(state.wind.direction)}deg`);
 }
 
 function showOverlay(title, text, action) {
@@ -656,6 +868,7 @@ function update(dt) {
   state.packageTimer += dt;
   state.pirateTimer += dt;
 
+  updateWind(dt);
   updateBoat(dt);
   updatePirates(dt);
   updatePackages(dt);
@@ -673,17 +886,53 @@ function update(dt) {
   }
 }
 
+function updateWind(dt) {
+  state.wind.shiftTimer -= dt;
+  if (state.wind.shiftTimer <= 0) {
+    state.wind.shiftTimer = random(2.8, 6.5);
+    state.wind.targetDirection = state.wind.direction + random(-0.75, 0.75);
+    state.wind.targetSpeed = clamp(state.wind.speed + random(-4.5, 5.5), 5, 24);
+  }
+
+  const gust = Math.sin(state.waveTime * 0.92) * 0.7 + Math.sin(state.waveTime * 1.73 + 1.8) * 0.35;
+  state.wind.direction += angleDelta(state.wind.direction, state.wind.targetDirection) * Math.min(1, dt * 0.45);
+  state.wind.speed += (state.wind.targetSpeed + gust - state.wind.speed) * Math.min(1, dt * 0.65);
+}
+
 function updateBoat(dt) {
   const boat = state.boat;
-  boat.vx += input.x * acceleration * dt;
-  boat.vz += input.z * acceleration * dt;
-  boat.vx *= Math.pow(drag, dt * 60);
-  boat.vz *= Math.pow(drag, dt * 60);
+  const inputMagnitude = Math.hypot(input.x, input.z);
+
+  if (inputMagnitude > 0.12) {
+    const desiredAngle = Math.atan2(input.x, input.z);
+    boat.angle += clamp(angleDelta(boat.angle, desiredAngle), -turnRate * dt, turnRate * dt);
+  }
+
+  const info = windAngleInfo(boat.angle);
+  const forwardX = Math.sin(boat.angle);
+  const forwardZ = Math.cos(boat.angle);
+  const windFlow = state.wind.direction + Math.PI;
+  const windFactor = clamp((state.wind.speed - 4) / 16, 0.25, 1.3);
+  const drive = info.power * sailAcceleration * windFactor * (0.55 + inputMagnitude * 0.45);
+  const helmAssist = info.stalled ? 0 : inputMagnitude * rudderAcceleration;
+
+  boat.vx += forwardX * (drive + helmAssist) * dt;
+  boat.vz += forwardZ * (drive + helmAssist) * dt;
+
+  if (info.stalled) {
+    boat.vx += Math.sin(windFlow) * state.wind.speed * 0.42 * dt;
+    boat.vz += Math.cos(windFlow) * state.wind.speed * 0.42 * dt;
+  }
+
+  const friction = info.stalled ? stalledDrag : drag;
+  boat.vx *= Math.pow(friction, dt * 60);
+  boat.vz *= Math.pow(friction, dt * 60);
 
   const speed = Math.hypot(boat.vx, boat.vz);
-  if (speed > maxSpeed) {
-    boat.vx = (boat.vx / speed) * maxSpeed;
-    boat.vz = (boat.vz / speed) * maxSpeed;
+  const pointSpeed = maxSpeed * clamp(0.42 + info.power * 0.9, 0.24, 1);
+  if (speed > pointSpeed) {
+    boat.vx = (boat.vx / speed) * pointSpeed;
+    boat.vz = (boat.vz / speed) * pointSpeed;
   }
 
   boat.x += boat.vx * dt;
@@ -693,15 +942,13 @@ function updateBoat(dt) {
   boat.z = clamp(boat.z, b.minZ, b.maxZ);
   resolveIslandCollisions(boat, boatRadius + 1, 0.18);
 
-  if (Math.hypot(boat.vx, boat.vz) > 2) {
-    boat.angle = Math.atan2(boat.vx, boat.vz);
-  }
-
   boat.invincible = Math.max(0, boat.invincible - dt);
 
-  if (speed > 22 && Math.random() < 0.25) {
+  if (speed > 18 && Math.random() < 0.25) {
     burst(boat.x - Math.sin(boat.angle) * 3.5, boat.z - Math.cos(boat.angle) * 3.5, 0xdbf6ff, 1);
   }
+
+  syncInstruments();
 }
 
 function updatePirates(dt) {
@@ -811,6 +1058,22 @@ function updateModels() {
   if (state.boat?.model) {
     const wave = waveHeightAt(state.boat.x, state.boat.z);
     const bob = Math.sin(state.waveTime * 3.2 + state.boat.x * 0.05) * 0.22;
+    const sailInfo = windAngleInfo(state.boat.angle);
+    const sails = state.boat.model.userData.sails;
+    if (sails) {
+      const luff = sailInfo.stalled ? Math.sin(state.waveTime * 14) * 0.34 + Math.sin(state.waveTime * 23) * 0.16 : 0;
+      const mainTarget = sailInfo.stalled ? luff : sailInfo.sailAngle;
+      const jibTarget = sailInfo.stalled ? -luff * 1.2 : sailInfo.jibAngle;
+      const boomTarget = sailInfo.stalled ? luff * 0.35 : sailInfo.boomAngle;
+      sails.mainSail.rotation.y += (mainTarget - sails.mainSail.rotation.y) * 0.2;
+      sails.jib.rotation.y += (jibTarget - sails.jib.rotation.y) * 0.22;
+      sails.boom.rotation.y += (boomTarget - sails.boom.rotation.y) * 0.16;
+      sails.mainSail.rotation.z = sailInfo.stalled ? Math.sin(state.waveTime * 18) * 0.025 : 0;
+      sails.jib.rotation.z = sailInfo.stalled ? Math.sin(state.waveTime * 20 + 1.4) * 0.035 : 0;
+      animateSail(sails.mainSail, state.waveTime, mainTarget, { stalled: sailInfo.stalled });
+      animateSail(sails.jib, state.waveTime, jibTarget, { stalled: sailInfo.stalled, jib: true });
+      animateSpinnaker(sails.spinnaker, state.waveTime, sailInfo.running && !sailInfo.stalled);
+    }
     state.boat.model.position.set(state.boat.x, 1.35 + wave * 0.55 + bob, state.boat.z);
     state.boat.model.rotation.set(
       Math.sin(state.waveTime * 2.8 + state.boat.z * 0.04) * 0.055,
@@ -872,7 +1135,7 @@ function hitBoat(pirate) {
 function endGame() {
   state.running = false;
   state.gameOver = true;
-  showOverlay("Signal Lost", `${state.score} wind data point${state.score === 1 ? "" : "s"} captured for Veetr.`, "Run Again");
+  showOverlay("Run Over", `${state.score} data buoy${state.score === 1 ? "" : "s"} collected.`, "Run Again");
 }
 
 function render(time) {
@@ -892,7 +1155,7 @@ function togglePause() {
   state.paused = !state.paused;
   pauseIcon.textContent = state.paused ? "▶" : "Ⅱ";
   if (state.paused) {
-    showOverlay("Paused", "Open-source wind data, ready when you are.", "Resume");
+    showOverlay("Paused", "Wind and buoys are waiting.", "Resume");
   } else {
     hideOverlay();
   }
@@ -965,6 +1228,8 @@ touchPad.addEventListener("pointercancel", clearPointer);
 window.addEventListener("resize", resize);
 
 bestEl.textContent = state.best;
+resetWind();
 resize();
 updateModels();
+syncInstruments();
 requestAnimationFrame(render);

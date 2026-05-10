@@ -3,19 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Veetr Wind Run - Open Source Sailing Instruments</title>
+    <title>Wind Run</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <main class="game-shell">
-      <canvas id="game" aria-label="Veetr Wind Run game"></canvas>
+      <canvas id="game" aria-label="Wind Run game"></canvas>
 
       <section class="hud" aria-label="Game status">
-        <div class="brand"><span>VEETR</span><small>Wind Run</small></div>
+        <div class="brand"><span>Wind Run</span><small>by Veetr</small></div>
         <div class="stats">
-          <span>Wind data <strong id="score">0</strong></span>
+          <span>Data <strong id="score">0</strong></span>
           <span>Hull <strong id="lives">3</strong></span>
-          <span>Best run <strong id="best">0</strong></span>
+          <span>Best <strong id="best">0</strong></span>
         </div>
       </section>
 
@@ -31,14 +31,32 @@
         <div class="touch-stick" id="touchStick"></div>
       </div>
 
+      <section class="instrument-bar" aria-label="Sailing instruments">
+        <div class="wind-dial" aria-hidden="true">
+          <div class="wind-dial-face">
+            <span>N</span><span>E</span><span>S</span><span>W</span>
+            <div class="wind-needle" id="windNeedle"></div>
+            <div class="boat-marker"></div>
+          </div>
+        </div>
+        <div class="instrument-grid">
+          <div class="instrument"><span>TWS</span><strong id="windSpeed">--</strong><small>kt</small></div>
+          <div class="instrument"><span>TWD</span><strong id="windDirection">--</strong><small>deg</small></div>
+          <div class="instrument"><span>TWA</span><strong id="windAngle">--</strong><small>deg</small></div>
+          <div class="instrument"><span>HDG</span><strong id="heading">--</strong><small>deg</small></div>
+          <div class="instrument"><span>SOG</span><strong id="boatSpeed">--</strong><small>kt</small></div>
+          <div class="instrument wide"><span>SAILS</span><strong id="sailTrim">Ready</strong><small id="pointOfSail">Idle</small></div>
+        </div>
+      </section>
+
       <section class="overlay is-visible" id="overlay" aria-live="polite">
         <div class="overlay-panel">
-          <div class="eyebrow">Open-source sailing instruments</div>
-          <h1 id="overlayTitle">Veetr Wind Run</h1>
-          <p id="overlayText">Collect wind data across the course and outrun proprietary lock-in.</p>
+          <div class="eyebrow">Sailing game</div>
+          <h1 id="overlayTitle">Wind Run</h1>
+          <p id="overlayText">Collect data buoys, trim for the wind, and tack around the no-go zone.</p>
           <div class="overlay-actions">
-            <button id="startButton" type="button">Start Demo</button>
-            <a href="https://veetr.org" target="_blank" rel="noopener">Build your dashboard</a>
+            <button id="startButton" type="button">Start</button>
+            <a href="https://veetr.org" target="_blank" rel="noopener">veetr.org</a>
           </div>
         </div>
       </section>

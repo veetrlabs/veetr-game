@@ -6,6 +6,7 @@
   --panel-strong: rgba(7, 20, 29, 0.9);
   --line: rgba(255, 255, 255, 0.18);
   --accent: #ffd166;
+  --signal: #65e4c3;
   --danger: #ff6b6b;
 }
 
@@ -51,7 +52,7 @@ button {
   position: absolute;
   top: clamp(12px, 2.6vw, 24px);
   left: clamp(12px, 2.6vw, 24px);
-  right: clamp(72px, 8vw, 104px);
+  right: clamp(164px, 18vw, 218px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -65,10 +66,24 @@ button {
 }
 
 .brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   min-width: max-content;
-  font-size: 0.92rem;
-  font-weight: 800;
   text-transform: uppercase;
+}
+
+.brand span {
+  color: var(--signal);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.brand small {
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .stats {
@@ -98,6 +113,30 @@ button {
   background: var(--panel);
   backdrop-filter: blur(14px);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
+}
+
+.veetr-link {
+  position: absolute;
+  top: clamp(12px, 2.6vw, 24px);
+  right: clamp(64px, 7.5vw, 84px);
+  display: grid;
+  place-items: center;
+  min-width: 92px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(101, 228, 195, 0.36);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(8, 24, 35, 0.72);
+  backdrop-filter: blur(14px);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
+}
+
+.veetr-link span {
+  color: var(--signal);
 }
 
 .pause-button {
@@ -157,6 +196,15 @@ button {
   box-shadow: 0 26px 80px rgba(0, 0, 0, 0.46);
 }
 
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--signal);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .overlay h1 {
   margin: 0 0 10px;
   font-size: clamp(2.1rem, 9vw, 4.35rem);
@@ -171,6 +219,14 @@ button {
   line-height: 1.45;
 }
 
+.overlay-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .overlay button {
   min-width: 132px;
   min-height: 46px;
@@ -180,6 +236,20 @@ button {
   background: var(--accent);
   font-weight: 800;
   box-shadow: 0 12px 26px rgba(255, 209, 102, 0.25);
+}
+
+.overlay-actions a {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(101, 228, 195, 0.38);
+  border-radius: 8px;
+  color: var(--signal);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 800;
+  text-decoration: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -199,6 +269,10 @@ button {
   }
 
   .brand {
+    display: none;
+  }
+
+  .veetr-link {
     display: none;
   }
 

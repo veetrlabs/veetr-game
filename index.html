@@ -3,21 +3,25 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Harbor Run</title>
+    <title>Veetr Wind Run - Open Source Sailing Instruments</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <main class="game-shell">
-      <canvas id="game" aria-label="Harbor Run game"></canvas>
+      <canvas id="game" aria-label="Veetr Wind Run game"></canvas>
 
       <section class="hud" aria-label="Game status">
-        <div class="brand">Harbor Run</div>
+        <div class="brand"><span>VEETR</span><small>Wind Run</small></div>
         <div class="stats">
-          <span>Packages <strong id="score">0</strong></span>
+          <span>Wind data <strong id="score">0</strong></span>
           <span>Hull <strong id="lives">3</strong></span>
-          <span>Best <strong id="best">0</strong></span>
+          <span>Best run <strong id="best">0</strong></span>
         </div>
       </section>
+
+      <a class="veetr-link" href="https://veetr.org" target="_blank" rel="noopener" aria-label="Learn more about Veetr">
+        <span>veetr.org</span>
+      </a>
 
       <button class="round-button pause-button" id="pauseButton" type="button" aria-label="Pause">
         <span id="pauseIcon">Ⅱ</span>
@@ -29,9 +33,13 @@
 
       <section class="overlay is-visible" id="overlay" aria-live="polite">
         <div class="overlay-panel">
-          <h1 id="overlayTitle">Harbor Run</h1>
-          <p id="overlayText">Collect cargo from the trade lanes before the pirate crews close in.</p>
-          <button id="startButton" type="button">Set Sail</button>
+          <div class="eyebrow">Open-source sailing instruments</div>
+          <h1 id="overlayTitle">Veetr Wind Run</h1>
+          <p id="overlayText">Collect wind data across the course and outrun proprietary lock-in.</p>
+          <div class="overlay-actions">
+            <button id="startButton" type="button">Start Demo</button>
+            <a href="https://veetr.org" target="_blank" rel="noopener">Build your dashboard</a>
+          </div>
         </div>
       </section>
     </main>

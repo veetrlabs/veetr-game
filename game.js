@@ -872,7 +872,7 @@ function hitBoat(pirate) {
 function endGame() {
   state.running = false;
   state.gameOver = true;
-  showOverlay("Run Over", `${state.score} package${state.score === 1 ? "" : "s"} delivered.`, "Sail Again");
+  showOverlay("Signal Lost", `${state.score} wind data point${state.score === 1 ? "" : "s"} captured for Veetr.`, "Run Again");
 }
 
 function render(time) {
@@ -892,7 +892,7 @@ function togglePause() {
   state.paused = !state.paused;
   pauseIcon.textContent = state.paused ? "▶" : "Ⅱ";
   if (state.paused) {
-    showOverlay("Paused", "The tide is holding steady.", "Resume");
+    showOverlay("Paused", "Open-source wind data, ready when you are.", "Resume");
   } else {
     hideOverlay();
   }
